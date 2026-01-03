@@ -1,65 +1,125 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, Typography, Space, Button } from 'antd';
+import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
+
+const { Title, Paragraph } = Typography;
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // 检查登录状态
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    if (!isLoggedIn) {
+      router.push('/login');
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('username');
+    router.push('/login');
+  };
+
+  const username = typeof window !== 'undefined' ? localStorage.getItem('username') : null;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">
+      <div className="max-w-6xl mx-auto">
+        <Card
+          className="shadow-lg"
+          style={{
+            borderRadius: '16px',
+          }}
+        >
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <Title level={2} className="mb-2">
+                欢迎，{username || '用户'}！
+              </Title>
+              <Paragraph className="text-gray-600">
+                您已成功登录系统
+              </Paragraph>
+            </div>
+            <Button
+              type="primary"
+              danger
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+              size="large"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              退出登录
+            </Button>
+          </div>
+
+          <Space orientation="vertical" size="large" className="w-full">
+            <Card
+              title="系统信息"
+              variant="borderless"
+              style={{
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+              }}
+              styles={{
+                header: { color: 'white', borderBottom: '1px solid rgba(255,255,255,0.2)' }
+              }}
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+              <div className="text-white">
+                <p className="text-lg mb-2">
+                  <UserOutlined className="mr-2" />
+                  当前用户：{username || 'admin'}
+                </p>
+                <p className="text-lg">
+                  登录状态：已登录
+                </p>
+              </div>
+            </Card>
+
+            <Card
+              title="功能模块"
+              variant="borderless"
+              style={{ borderRadius: '12px' }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card
+                  hoverable
+                  className="text-center"
+                  style={{ borderRadius: '8px' }}
+                >
+                  <Title level={4}>数据管理</Title>
+                  <Paragraph className="text-gray-500">
+                    管理和查看系统数据
+                  </Paragraph>
+                </Card>
+                <Card
+                  hoverable
+                  className="text-center"
+                  style={{ borderRadius: '8px' }}
+                >
+                  <Title level={4}>用户管理</Title>
+                  <Paragraph className="text-gray-500">
+                    管理系统用户信息
+                  </Paragraph>
+                </Card>
+                <Card
+                  hoverable
+                  className="text-center"
+                  style={{ borderRadius: '8px' }}
+                >
+                  <Title level={4}>系统设置</Title>
+                  <Paragraph className="text-gray-500">
+                    配置系统参数
+                  </Paragraph>
+                </Card>
+              </div>
+            </Card>
+          </Space>
+        </Card>
+      </div>
     </div>
   );
 }
