@@ -1,125 +1,94 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, Typography, Space, Button } from 'antd';
-import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
+import { Card, Typography, Space, Row, Col, Statistic } from 'antd';
+import { UserOutlined, ShopOutlined, TeamOutlined } from '@ant-design/icons';
+import DashboardLayout from '@/components/DashboardLayout';
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // 检查登录状态
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    if (!isLoggedIn) {
-      router.push('/login');
-    }
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('username');
-    router.push('/login');
-  };
-
   const username = typeof window !== 'undefined' ? localStorage.getItem('username') : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <Card
-          className="shadow-lg"
-          style={{
-            borderRadius: '16px',
-          }}
-        >
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <Title level={2} className="mb-2">
-                欢迎，{username || '用户'}！
-              </Title>
-              <Paragraph className="text-gray-600">
-                您已成功登录系统
-              </Paragraph>
-            </div>
-            <Button
-              type="primary"
-              danger
-              icon={<LogoutOutlined />}
-              onClick={handleLogout}
-              size="large"
-            >
-              退出登录
-            </Button>
-          </div>
+    <DashboardLayout>
+      <div>
+        <Title level={2} style={{ marginBottom: 24 }}>
+          欢迎，{username || '用户'}！
+        </Title>
 
-          <Space orientation="vertical" size="large" className="w-full">
-            <Card
-              title="系统信息"
-              variant="borderless"
-              style={{
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-              }}
-              styles={{
-                header: { color: 'white', borderBottom: '1px solid rgba(255,255,255,0.2)' }
-              }}
-            >
-              <div className="text-white">
-                <p className="text-lg mb-2">
-                  <UserOutlined className="mr-2" />
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          {/* 统计卡片 */}
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="商户总数"
+                  value={0}
+                  prefix={<ShopOutlined />}
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="用户总数"
+                  value={0}
+                  prefix={<TeamOutlined />}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="启用商户"
+                  value={0}
+                  prefix={<ShopOutlined />}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="停用商户"
+                  value={0}
+                  prefix={<ShopOutlined />}
+                  valueStyle={{ color: '#ff4d4f' }}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {/* 系统信息卡片 */}
+          <Card
+            title="系统信息"
+            style={{
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            }}
+            styles={{
+              header: { color: 'white', borderBottom: '1px solid rgba(255,255,255,0.2)' },
+              body: { color: 'white' },
+            }}
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12}>
+                <div style={{ fontSize: 16, marginBottom: 8 }}>
+                  <UserOutlined style={{ marginRight: 8 }} />
                   当前用户：{username || 'admin'}
-                </p>
-                <p className="text-lg">
+                </div>
+              </Col>
+              <Col xs={24} sm={12}>
+                <div style={{ fontSize: 16 }}>
                   登录状态：已登录
-                </p>
-              </div>
-            </Card>
-
-            <Card
-              title="功能模块"
-              variant="borderless"
-              style={{ borderRadius: '12px' }}
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card
-                  hoverable
-                  className="text-center"
-                  style={{ borderRadius: '8px' }}
-                >
-                  <Title level={4}>数据管理</Title>
-                  <Paragraph className="text-gray-500">
-                    管理和查看系统数据
-                  </Paragraph>
-                </Card>
-                <Card
-                  hoverable
-                  className="text-center"
-                  style={{ borderRadius: '8px' }}
-                >
-                  <Title level={4}>用户管理</Title>
-                  <Paragraph className="text-gray-500">
-                    管理系统用户信息
-                  </Paragraph>
-                </Card>
-                <Card
-                  hoverable
-                  className="text-center"
-                  style={{ borderRadius: '8px' }}
-                >
-                  <Title level={4}>系统设置</Title>
-                  <Paragraph className="text-gray-500">
-                    配置系统参数
-                  </Paragraph>
-                </Card>
-              </div>
-            </Card>
-          </Space>
-        </Card>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+        </Space>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
