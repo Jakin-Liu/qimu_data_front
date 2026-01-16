@@ -297,7 +297,7 @@ export default function MerchantPage() {
         width={600}
         okText="确定"
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, Typography, Space, Row, Col, Statistic } from 'antd';
 import { UserOutlined, ShopOutlined, TeamOutlined } from '@ant-design/icons';
 import DashboardLayout from '@/components/DashboardLayout';
@@ -7,7 +8,13 @@ import DashboardLayout from '@/components/DashboardLayout';
 const { Title } = Typography;
 
 export default function Home() {
-  const username = typeof window !== 'undefined' ? localStorage.getItem('username') : null;
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    // 只在客户端读取 localStorage
+    const user = localStorage.getItem('username');
+    setUsername(user);
+  }, []);
 
   return (
     <DashboardLayout>
@@ -16,7 +23,7 @@ export default function Home() {
           欢迎，{username || '用户'}！
         </Title>
 
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
           {/* 统计卡片 */}
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} lg={6}>
@@ -25,7 +32,7 @@ export default function Home() {
                   title="商户总数"
                   value={0}
                   prefix={<ShopOutlined />}
-                  valueStyle={{ color: '#1890ff' }}
+                  styles={{ content: { color: '#1890ff' } }}
                 />
               </Card>
             </Col>
@@ -35,7 +42,7 @@ export default function Home() {
                   title="用户总数"
                   value={0}
                   prefix={<TeamOutlined />}
-                  valueStyle={{ color: '#52c41a' }}
+                  styles={{ content: { color: '#52c41a' } }}
                 />
               </Card>
             </Col>
@@ -45,7 +52,7 @@ export default function Home() {
                   title="启用商户"
                   value={0}
                   prefix={<ShopOutlined />}
-                  valueStyle={{ color: '#52c41a' }}
+                  styles={{ content: { color: '#52c41a' } }}
                 />
               </Card>
             </Col>
@@ -55,7 +62,7 @@ export default function Home() {
                   title="停用商户"
                   value={0}
                   prefix={<ShopOutlined />}
-                  valueStyle={{ color: '#ff4d4f' }}
+                  styles={{ content: { color: '#ff4d4f' } }}
                 />
               </Card>
             </Col>
