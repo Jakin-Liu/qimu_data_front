@@ -21,6 +21,7 @@ import {
   LogoutOutlined,
   BarChartOutlined,
   BankOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 
@@ -97,6 +98,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       key: '/shop',
       icon: <BankOutlined />,
       label: '商家店铺',
+    },
+    {
+      key: '/task',
+      icon: <UnorderedListOutlined />,
+      label: '任务管理',
     },
     {
       key: '/settings',

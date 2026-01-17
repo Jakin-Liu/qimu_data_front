@@ -1,5 +1,6 @@
 // API 基础配置
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3900';
+const API_PREFIX = '/api/v1';
 
 // 获取认证 token（从 localStorage 或其他地方）
 function getAuthToken(): string | null {
@@ -20,10 +21,14 @@ async function request<T>(
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  // 确保endpoint以/开头，并添加api/v1前缀
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const fullEndpoint = `${API_PREFIX}${normalizedEndpoint}`;
+
+  const response = await fetch(`${API_BASE_URL}${fullEndpoint}`, {
     ...options,
     headers,
   });

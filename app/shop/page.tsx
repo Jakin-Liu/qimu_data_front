@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   Card,
@@ -9,111 +9,132 @@ import {
   Row,
   Col,
   Tag,
+  Button,
+  message,
+  Spin,
 } from 'antd';
-import { BankOutlined } from '@ant-design/icons';
+import { BankOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import DashboardLayout from '@/components/DashboardLayout';
+import { syncStoreInfo, getStoreInfoList } from '@/lib/api/shop';
+import type { Shop } from '@/lib/types/shop';
 
 const { Title } = Typography;
 
-// 商家店铺数据类型
-interface ShopData {
-  key: string;
-  shopId: number;
-  name: string;
-  platform: string;
-  status: string;
-  authExpiredStatus: string;
-  currency: string;
-  timeZoneId: string;
-  createTime: number;
-  expireTime: number;
-  isDeleted: number;
-}
-
-// 模拟数据
-const shopData: ShopData[] = [
-  {
-    key: '1',
-    shopId: 30598,
-    name: 'CS355',
-    platform: 'INDEPENDENT',
-    status: 'UNLOCK',
-    authExpiredStatus: 'NORMAL',
-    currency: 'IDR',
-    timeZoneId: 'Asia/Jakarta',
-    createTime: 1756867627000,
-    expireTime: 2114352000000,
-    isDeleted: 0,
-  },
-  {
-    key: '2',
-    shopId: 30599,
-    name: 'CS356',
-    platform: 'SHOPEE',
-    status: 'LOCK',
-    authExpiredStatus: 'EXPIRED',
-    currency: 'THB',
-    timeZoneId: 'Asia/Bangkok',
-    createTime: 1756867628000,
-    expireTime: 2114352001000,
-    isDeleted: 0,
-  },
-  {
-    key: '3',
-    shopId: 30600,
-    name: 'CS357',
-    platform: 'LAZADA',
-    status: 'UNLOCK',
-    authExpiredStatus: 'NORMAL',
-    currency: 'SGD',
-    timeZoneId: 'Asia/Singapore',
-    createTime: 1756867629000,
-    expireTime: 2114352002000,
-    isDeleted: 0,
-  },
-];
-
-// 格式化时间戳
-const formatTimestamp = (timestamp: number): string => {
-  if (!timestamp) return '-';
-  return new Date(timestamp).toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-};
-
-// 状态标签颜色
-const getStatusColor = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    UNLOCK: 'green',
-    LOCK: 'red',
-  };
-  return statusMap[status] || 'default';
-};
-
-// 认证过期状态标签颜色
-const getAuthExpiredStatusColor = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    NORMAL: 'green',
-    EXPIRED: 'red',
-  };
-  return statusMap[status] || 'default';
-};
-
 export default function ShopPage() {
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // 加载店铺列表
+  const loadShops = async () => {
+    setLoading(true);
+    try {
+      const response = await getStoreInfoList({
+        page: currentPage,
+        pageSize: pageSize,
+      });
+      setShops(response?.data?.list || []);
+      setTotal(response?.data?.total || 0);
+    } catch (error: any) {
+      message.error(error.message || '加载店铺列表失败');
+      setShops([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 同步店铺信息
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await syncStoreInfo();
+      // 处理不同的响应结构
+      const success = response.data?.success ?? response.success ?? false;
+      const count = response.data?.count ?? response.count ?? 0;
+      const msg = response.data?.message ?? response.message ?? '';
+      
+      if (success) {
+        message.success(`同步成功，共同步 ${count} 条店铺信息`);
+        // 同步成功后刷新列表
+        await loadShops();
+      } else {
+        // 只有在真正失败时才显示错误提示
+        if (msg) {
+          message.warning(msg);
+        } else {
+          message.warning('同步完成，但未返回成功状态');
+        }
+      }
+    } catch (error: any) {
+      message.error(error.message || '同步店铺信息失败');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // 处理分页变化
+  const handleTableChange = (page: number, size: number) => {
+    setCurrentPage(page);
+    setPageSize(size);
+  };
+
+  // 初始加载和分页变化时重新加载
+  useEffect(() => {
+    loadShops();
+  }, [currentPage, pageSize]);
+
+  // 格式化时间戳
+  const formatTimestamp = (timestamp: number | string | null | undefined): string => {
+    if (!timestamp) return '-';
+    // 如果是字符串，转换为数字
+    const timestampNum = typeof timestamp === 'string' ? parseInt(timestamp, 10) : timestamp;
+    if (isNaN(timestampNum)) return '-';
+    return new Date(timestampNum).toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  };
+
+  // 状态标签颜色
+  const getStatusColor = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      UNLOCK: 'green',
+      LOCK: 'red',
+    };
+    return statusMap[status] || 'default';
+  };
+
+  // 认证过期状态标签颜色
+  const getAuthExpiredStatusColor = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      NORMAL: 'green',
+      EXPIRED: 'red',
+      NO_AUTH: 'orange',
+    };
+    return statusMap[status] || 'default';
+  };
+
   // 表格列定义
-  const columns: ColumnsType<ShopData> = [
+  const columns: ColumnsType<Shop> = [
     {
       title: '店铺ID',
       dataIndex: 'shopId',
       key: 'shopId',
       width: 100,
-      sorter: (a, b) => a.shopId - b.shopId,
+      sorter: (a, b) => {
+        const aId = typeof a.shopId === 'string' ? parseInt(a.shopId, 10) : a.shopId;
+        const bId = typeof b.shopId === 'string' ? parseInt(b.shopId, 10) : b.shopId;
+        return (isNaN(aId) ? 0 : aId) - (isNaN(bId) ? 0 : bId);
+      },
     },
     {
       title: '店铺名称',
@@ -146,53 +167,56 @@ export default function ShopPage() {
       dataIndex: 'authExpiredStatus',
       key: 'authExpiredStatus',
       width: 130,
-      render: (status: string) => (
-        <Tag color={getAuthExpiredStatusColor(status)}>
-          {status === 'NORMAL' ? '正常' : status === 'EXPIRED' ? '已过期' : status}
-        </Tag>
-      ),
+      render: (status: string) => {
+        const statusMap: Record<string, string> = {
+          NORMAL: '正常',
+          EXPIRED: '已过期',
+          NO_AUTH: '未认证',
+        };
+        return (
+          <Tag color={getAuthExpiredStatusColor(status)}>
+            {statusMap[status] || status}
+          </Tag>
+        );
+      },
     },
     {
       title: '货币',
       dataIndex: 'currency',
       key: 'currency',
       width: 100,
-      render: (text: string) => (
-        <Tag>{text}</Tag>
-      ),
+      render: (text: string | null) => text ? <Tag>{text}</Tag> : '-',
     },
     {
       title: '时区',
       dataIndex: 'timeZoneId',
       key: 'timeZoneId',
       width: 150,
+      render: (text: string | null) => text || '-',
     },
     {
       title: '创建时间',
       dataIndex: 'createTime',
       key: 'createTime',
       width: 180,
-      render: (timestamp: number) => formatTimestamp(timestamp),
-      sorter: (a, b) => a.createTime - b.createTime,
+      render: (timestamp: number | string | null) => formatTimestamp(timestamp),
+      sorter: (a, b) => {
+        const aTime = typeof a.createTime === 'string' ? parseInt(a.createTime, 10) : (a.createTime || 0);
+        const bTime = typeof b.createTime === 'string' ? parseInt(b.createTime, 10) : (b.createTime || 0);
+        return aTime - bTime;
+      },
     },
     {
       title: '过期时间',
       dataIndex: 'expireTime',
       key: 'expireTime',
       width: 180,
-      render: (timestamp: number) => formatTimestamp(timestamp),
-      sorter: (a, b) => a.expireTime - b.expireTime,
-    },
-    {
-      title: '是否删除',
-      dataIndex: 'isDeleted',
-      key: 'isDeleted',
-      width: 100,
-      render: (value: number) => (
-        <Tag color={value === 0 ? 'green' : 'red'}>
-          {value === 0 ? '否' : '是'}
-        </Tag>
-      ),
+      render: (timestamp: number | string | null) => formatTimestamp(timestamp),
+      sorter: (a, b) => {
+        const aTime = typeof a.expireTime === 'string' ? parseInt(a.expireTime, 10) : (a.expireTime || 0);
+        const bTime = typeof b.expireTime === 'string' ? parseInt(b.expireTime, 10) : (b.expireTime || 0);
+        return aTime - bTime;
+      },
     },
   ];
 
@@ -200,8 +224,8 @@ export default function ShopPage() {
     <DashboardLayout>
       <div>
         <Space orientation="vertical" size="large" style={{ width: '100%' }}>
-          {/* 页面标题 */}
-          <Row align="middle">
+          {/* 页面标题和操作栏 */}
+          <Row justify="space-between" align="middle">
             <Col>
               <Space align="center">
                 <BankOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
@@ -210,27 +234,51 @@ export default function ShopPage() {
                 </Title>
               </Space>
             </Col>
+            <Col>
+              <Space>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={loadShops}
+                  loading={loading}
+                >
+                  刷新
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<SyncOutlined />}
+                  onClick={handleSync}
+                  loading={syncing}
+                >
+                  同步店铺信息
+                </Button>
+              </Space>
+            </Col>
           </Row>
 
           {/* 数据表格 */}
           <Card>
-            <Table
-              columns={columns}
-              dataSource={shopData}
-              scroll={{ x: 1200 }}
-              pagination={{
-                showSizeChanger: true,
-                showTotal: (total) => `共 ${total} 条记录`,
-                pageSizeOptions: ['10', '20', '50', '100'],
-                defaultPageSize: 10,
-              }}
-              bordered
-              size="small"
-            />
+            <Spin spinning={loading}>
+              <Table
+                columns={columns}
+                dataSource={shops?.map((shop) => ({ ...shop, key: shop.shopId?.toString() || shop.id?.toString() || Math.random().toString() })) || []}
+                scroll={{ x: 1200 }}
+                pagination={{
+                  current: currentPage,
+                  pageSize: pageSize,
+                  total: total,
+                  showSizeChanger: true,
+                  showTotal: (total) => `共 ${total} 条记录`,
+                  pageSizeOptions: ['10', '20', '50', '100'],
+                  onChange: handleTableChange,
+                  onShowSizeChange: handleTableChange,
+                }}
+                bordered
+                size="small"
+              />
+            </Spin>
           </Card>
         </Space>
       </div>
     </DashboardLayout>
   );
 }
-
