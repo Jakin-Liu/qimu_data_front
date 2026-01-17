@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, Typography, Space, Row, Col, Statistic } from 'antd';
-import { UserOutlined, ShopOutlined, TeamOutlined } from '@ant-design/icons';
+import { ShopOutlined, TeamOutlined } from '@ant-design/icons';
 import DashboardLayout from '@/components/DashboardLayout';
 
 const { Title } = Typography;
@@ -67,33 +67,6 @@ export default function Home() {
               </Card>
             </Col>
           </Row>
-
-          {/* 系统信息卡片 */}
-          <Card
-            title="系统信息"
-            style={{
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            }}
-            styles={{
-              header: { color: 'white', borderBottom: '1px solid rgba(255,255,255,0.2)' },
-              body: { color: 'white' },
-            }}
-          >
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12}>
-                <div style={{ fontSize: 16, marginBottom: 8 }}>
-                  <UserOutlined style={{ marginRight: 8 }} />
-                  当前用户：{username || 'admin'}
-                </div>
-              </Col>
-              <Col xs={24} sm={12}>
-                <div style={{ fontSize: 16 }}>
-                  登录状态：已登录
-                </div>
-              </Col>
-            </Row>
-          </Card>
         </Space>
       </div>
     </DashboardLayout>

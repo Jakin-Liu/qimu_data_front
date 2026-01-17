@@ -19,6 +19,8 @@ import {
   SettingOutlined,
   DashboardOutlined,
   LogoutOutlined,
+  BarChartOutlined,
+  BankOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 
@@ -69,6 +71,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       label: '用户管理',
     },
     {
+      key: '/statistics',
+      icon: <BarChartOutlined />,
+      label: '运营数据',
+      children: [
+        {
+          key: '/statistics/market-income',
+          label: '市场收入统计',
+        },
+        {
+          key: '/statistics/link-data',
+          label: '链接数据统计',
+        },
+        {
+          key: '/statistics/product-cart',
+          label: '产品加购数据',
+        },
+        {
+          key: '/statistics/daily-data',
+          label: '每日销售数据',
+        },
+      ],
+    },
+    {
+      key: '/shop',
+      icon: <BankOutlined />,
+      label: '商家店铺',
+    },
+    {
       key: '/settings',
       icon: <SettingOutlined />,
       label: '系统设置',
@@ -98,8 +128,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     },
   ];
 
-  // 获取当前选中的菜单项
-  const selectedKeys = [pathname || '/'];
+  // 获取当前选中的菜单项和展开的菜单
+  const getSelectedKeys = () => {
+    if (pathname?.startsWith('/statistics')) {
+      return [pathname];
+    }
+    return [pathname || '/'];
+  };
+
+  const getOpenKeys = () => {
+    if (pathname?.startsWith('/statistics')) {
+      return ['/statistics'];
+    }
+    return [];
+  };
+
+  const [openKeys, setOpenKeys] = useState<string[]>(getOpenKeys());
+  const selectedKeys = getSelectedKeys();
+
+  // 当pathname变化时，更新openKeys
+  useEffect(() => {
+    setOpenKeys(getOpenKeys());
+  }, [pathname]);
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -135,6 +185,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           theme="dark"
           mode="inline"
           selectedKeys={selectedKeys}
+          openKeys={openKeys}
+          onOpenChange={setOpenKeys}
           items={menuItems}
           onClick={handleMenuClick}
         />
