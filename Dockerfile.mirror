@@ -1,7 +1,9 @@
+# 使用国内镜像源的 Dockerfile
+# 如果遇到 Docker Hub 连接问题，可以使用此文件
+# 使用方法: docker build -f Dockerfile.mirror -t <image-name> .
+
 # 指定平台为 linux/amd64，确保镜像可以在 x86_64 架构上运行
-# 如果需要支持 ARM 架构，可以使用 linux/arm64 或构建多平台镜像
-# --platform=linux/amd64
-FROM --platform=linux/amd64 node:22-alpine AS base
+FROM --platform=linux/amd64 registry.cn-hangzhou.aliyuncs.com/acs/node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM --platform=linux/amd64 base AS deps
@@ -56,3 +58,4 @@ USER nextjs
 EXPOSE 3000
 
 CMD ["node", "server.js"]
+
