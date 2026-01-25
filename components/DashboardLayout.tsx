@@ -21,7 +21,9 @@ import {
   LogoutOutlined,
   BarChartOutlined,
   BankOutlined,
-  UnorderedListOutlined,
+  DatabaseOutlined,
+  SearchOutlined,
+  CheckSquareOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 
@@ -72,6 +74,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       label: '用户管理',
     },
     {
+      key: '/task',
+      icon: <CheckSquareOutlined />,
+      label: '任务管理',
+    },
+    {
       key: '/statistics',
       icon: <BarChartOutlined />,
       label: '运营数据',
@@ -100,9 +107,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       label: '商家店铺',
     },
     {
-      key: '/task',
-      icon: <UnorderedListOutlined />,
-      label: '任务管理',
+      key: '/data-management',
+      icon: <DatabaseOutlined />,
+      label: '数据管理',
+      children: [
+        {
+          key: '/search',
+          icon: <SearchOutlined />,
+          label: 'TK带货达人数据检索',
+        },
+      ],
     },
     {
       key: '/settings',
@@ -139,14 +153,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (pathname?.startsWith('/statistics')) {
       return [pathname];
     }
+    // 先检查 /task（单数），避免被 /tasks（复数）匹配
+    if (pathname === '/task') {
+      return ['/task'];
+    }
+    if (pathname?.startsWith('/search')) {
+      // 数据管理相关页面
+      return [pathname];
+    }
     return [pathname || '/'];
   };
 
   const getOpenKeys = () => {
+    const keys: string[] = [];
     if (pathname?.startsWith('/statistics')) {
-      return ['/statistics'];
+      keys.push('/statistics');
     }
-    return [];
+    if (pathname?.startsWith('/search')) {
+      keys.push('/data-management');
+    }
+    return keys;
   };
 
   const [openKeys, setOpenKeys] = useState<string[]>(getOpenKeys());
