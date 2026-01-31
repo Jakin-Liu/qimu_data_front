@@ -57,9 +57,11 @@ export default function MerchantPage() {
     try {
       const params = statusFilter ? { status: statusFilter } : undefined;
       const data = await getMerchantList(params);
-      setMerchants(data);
+      // getMerchantList 已经确保返回数组
+      setMerchants(Array.isArray(data) ? data : []);
     } catch (error: any) {
       message.error(error.message || '加载商户列表失败');
+      setMerchants([]); // 确保即使出错也设置为空数组
     } finally {
       setLoading(false);
     }

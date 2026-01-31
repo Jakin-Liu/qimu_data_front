@@ -12,6 +12,8 @@ import {
   Select,
 } from 'antd';
 import { PlusOutlined, LoadingOutlined } from '@ant-design/icons';
+import { post } from '@/lib/api';
+import type { ApiResponse, CreateTaskDefinitionDto, SplitStrategy } from '@/lib/types/task';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -42,57 +44,103 @@ export default function TaskCreationDialog({
 
   const handleSubmit = async (values: { 
     taskType: TaskType;
+    name?: string;
     urls?: string; 
     remark?: string;
   }) => {
-    if (values.taskType === 'qianyi_sync') {
-      // 千易订单同步任务不需要URL
-      setIsSubmitting(true);
-      try {
-        // Mock API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const taskId = `qianyi-sync-${Date.now()}`;
-        message.success(`千易订单同步任务创建成功，任务ID: ${taskId}`);
-        form.resetFields();
-        onOpenChange(false);
-        window.dispatchEvent(new CustomEvent('task-created'));
-      } catch (error) {
-        message.error('创建任务失败');
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else {
-      // TikTok评论爬虫和FastMoss爬虫任务需要URL
-      if (!values.urls) {
-        message.error('请输入至少一个URL');
-        return;
-      }
-
-    const urls = values.urls
-      .split('\n')
-      .map((url) => url.trim())
-      .filter((url) => url !== '');
-
-    if (urls.length === 0) {
-      message.error('请至少添加一个URL');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-        const taskId = `${values.taskType}-${Date.now()}`;
-        const taskTypeName = values.taskType === 'tiktok_review' ? 'TikTok评论爬虫' : 'FastMoss爬虫';
-        message.success(`${taskTypeName}任务创建成功，任务ID: ${taskId}`);
+      // 根据任务类型确定拆分策略
+      // 有 URLs 的任务使用 url_list，其他使用 page
+      const splitStrategy: SplitStrategy = 
+        (values.taskType === 'fastmoss_crawl' || values.taskType === 'tiktok_review') 
+          ? 'url_list' 
+          : 'page';
+
+      // 构建任务定义数据
+      const taskDefinitionData: CreateTaskDefinitionDto = {
+        name: values.name || `任务_${Date.now()}`,
+        description: values.remark || undefined,
+        splitStrategy: splitStrategy,
+      };
+
+      // 根据任务类型设置配置
+      if (values.taskType === 'qianyi_sync') {
+        // 千易订单同步任务 - 不需要 config
+        taskDefinitionData.config = undefined;
+      } else if (values.taskType === 'fastmoss_crawl') {
+        // FastMoss爬虫任务需要URL
+        if (!values.urls) {
+          message.error('请输入至少一个URL');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const urls = values.urls
+          .split('\n')
+          .map((url) => url.trim())
+          .filter((url) => url !== '');
+
+        if (urls.length === 0) {
+          message.error('请至少添加一个URL');
+          setIsSubmitting(false);
+          return;
+        }
+
+        // 将 URLs 保存到 config.urls
+        taskDefinitionData.config = {
+          urls: urls,
+        };
+      } else if (values.taskType === 'tiktok_review') {
+        // TikTok评论爬虫任务需要URL
+        if (!values.urls) {
+          message.error('请输入至少一个URL');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const urls = values.urls
+          .split('\n')
+          .map((url) => url.trim())
+          .filter((url) => url !== '');
+
+        if (urls.length === 0) {
+          message.error('请至少添加一个URL');
+          setIsSubmitting(false);
+          return;
+        }
+
+        // TikTok 任务可能也需要类似的配置结构
+        taskDefinitionData.config = {
+          urls: urls,
+        };
+      }
+
+      console.log('📤 创建任务定义，提交数据:', taskDefinitionData);
+
+      // 调用创建任务定义的API
+      const response = await post<ApiResponse<any>>('/task/definition', taskDefinitionData);
+
+      console.log('✅ 创建任务定义响应:', response);
+
+      if (response.code !== 0) {
+        throw new Error(response.message || '创建任务失败');
+      }
+
+      const taskTypeName = 
+        values.taskType === 'qianyi_sync' ? '千易订单同步' :
+        values.taskType === 'tiktok_review' ? 'TikTok评论爬虫' :
+        'FastMoss爬虫';
+      
+      message.success(`${taskTypeName}任务定义创建成功`);
       form.resetFields();
       onOpenChange(false);
       window.dispatchEvent(new CustomEvent('task-created'));
-    } catch (error) {
-      message.error('创建任务失败');
+    } catch (error: any) {
+      console.error('❌ 创建任务定义失败:', error);
+      message.error(error?.message || '创建任务失败');
     } finally {
       setIsSubmitting(false);
-      }
     }
   };
 
@@ -147,6 +195,37 @@ export default function TaskCreationDialog({
             ]}
           />
         </Form.Item>
+
+        <Form.Item
+          label="任务名称"
+          name="name"
+          rules={[{ required: true, message: '请输入任务名称' }]}
+        >
+          <Input
+            placeholder="请输入任务名称"
+            allowClear
+          />
+        </Form.Item>
+
+        {/* 拆分策略 - 写死展示 */}
+        {taskType && (
+          <Form.Item label="拆分策略">
+            <Input
+              value={
+                taskType === 'fastmoss_crawl' || taskType === 'tiktok_review'
+                  ? 'url_list'
+                  : 'page'
+              }
+              disabled
+              style={{ background: '#f5f5f5' }}
+            />
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+              {taskType === 'fastmoss_crawl' || taskType === 'tiktok_review'
+                ? '按URL列表拆分任务'
+                : '按页面拆分任务'}
+            </Text>
+          </Form.Item>
+        )}
 
         {taskType && taskType !== 'qianyi_sync' && (
           <>

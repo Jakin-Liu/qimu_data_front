@@ -74,7 +74,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       label: '用户管理',
     },
     {
-      key: '/task',
+      key: '/task-definition',
       icon: <CheckSquareOutlined />,
       label: '任务管理',
     },
@@ -153,9 +153,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (pathname?.startsWith('/statistics')) {
       return [pathname];
     }
-    // 先检查 /task（单数），避免被 /tasks（复数）匹配
-    if (pathname === '/task') {
-      return ['/task'];
+    // 检查任务定义相关页面
+    if (pathname === '/task-definition' || pathname?.startsWith('/task-definition/')) {
+      return ['/task-definition'];
+    }
+    // 检查任务实例相关页面
+    if (pathname?.startsWith('/task-instance/')) {
+      return ['/task-definition'];
+    }
+    // 检查子任务相关页面
+    if (pathname?.startsWith('/sub-task/')) {
+      return ['/task-definition'];
     }
     if (pathname?.startsWith('/search')) {
       // 数据管理相关页面

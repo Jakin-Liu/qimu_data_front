@@ -5,10 +5,15 @@ import type {
   UpdateMerchantDto,
   QueryMerchantDto,
 } from '../types/merchant';
+import type { ApiResponse } from '../types/task';
 
 // 获取商户列表
 export async function getMerchantList(params?: QueryMerchantDto): Promise<Merchant[]> {
-  return get<Merchant[]>('/merchant', params);
+  const response = await get<ApiResponse<Merchant[]>>('/merchant', params);
+  if (response.code !== 0) {
+    throw new Error(response.message || '获取商户列表失败');
+  }
+  return response.data || [];
 }
 
 // 获取商户详情
