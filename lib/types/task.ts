@@ -9,6 +9,8 @@ export interface CreateTaskDefinitionDto {
   description?: string;
   /** 拆分策略：page / url_list */
   splitStrategy: SplitStrategy;
+  /** 执行器：tiktok / fastmoss */
+  excutor?: string;
   /** 配置 JSON：如 totalPage、urls 等 */
   config?: Record<string, unknown>;
 }

@@ -164,7 +164,7 @@ export default function TaskDefinitionDetailPage() {
       setStartingInstances((prev) => new Set(prev).add(taskInstanceId));
       console.log('🚀 启动任务实例，实例ID:', taskInstanceId);
 
-      const response = await post<ApiResponse<any>>('/task/instance/start', {
+      const response = await post<ApiResponse<any>>('/task/instance/run', {
         taskInstanceId: taskInstanceId,
       });
 
@@ -199,6 +199,8 @@ export default function TaskDefinitionDetailPage() {
         return { icon: <CheckCircleOutlined />, color: 'success', text: '已完成' };
       case 'failed':
         return { icon: <CloseCircleOutlined />, color: 'error', text: '失败' };
+      default:
+        return { icon: <ClockCircleOutlined />, color: 'default', text: '未知状态' };
     }
   };
 
@@ -296,10 +298,10 @@ export default function TaskDefinitionDetailPage() {
                         <div style={{ flex: 1 }}>
                           <Space align="start" style={{ marginBottom: 12 }} wrap>
                             <Tag
-                              icon={statusConfig.icon}
-                              color={statusConfig.color}
+                              icon={statusConfig?.icon}
+                              color={statusConfig?.color}
                             >
-                              {statusConfig.text}
+                              {statusConfig?.text || '未知状态'}
                             </Tag>
                             <Text type="secondary" code>
                               实例ID: {instance.taskInstanceId}

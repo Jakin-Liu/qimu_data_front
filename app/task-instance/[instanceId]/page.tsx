@@ -19,6 +19,7 @@ import {
   Row,
   Col,
   Drawer,
+  Input,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -28,6 +29,8 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   InfoCircleOutlined,
+  LinkOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import DashboardLayout from '@/components/DashboardLayout';
 import type { TaskInstance, SubTask, SubTaskListResponse, ApiResponse } from '@/lib/types/task';
@@ -123,6 +126,24 @@ export default function TaskInstanceDetailPage() {
   const handlePageChange = (page: number, pageSize: number) => {
     setPagination((prev) => ({ ...prev, current: page, pageSize }));
     fetchSubTasks(page, pageSize);
+  };
+
+  // 复制URL到剪贴板
+  const handleCopyUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      message.success('URL已复制到剪贴板');
+    } catch (error) {
+      console.error('复制失败:', error);
+      message.error('复制失败');
+    }
+  };
+
+  // 访问URL
+  const handleVisitUrl = (url: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
   const getStatusConfig = (status: TaskInstance['status'] | SubTask['status']) => {
@@ -250,69 +271,201 @@ export default function TaskInstanceDetailPage() {
               <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
                 {subTasks.map((subTask) => {
                   const subTaskStatusConfig = getStatusConfig(subTask.status);
+                  // 计算进度百分比
+                  const progressPercent =
+                    subTask.currentPage !== undefined && subTask.totalPages !== undefined && subTask.totalPages > 0
+                      ? Math.round((subTask.currentPage / subTask.totalPages) * 100)
+                      : 0;
+                  
+                  // 格式化子任务ID（提取数字部分，显示为#格式）
+                  const taskNumber = subTask.subtaskId.match(/\d+$/)?.[0] || subTask.subtaskId;
+
                   return (
                     <Card
                       key={subTask.subtaskId}
+                      style={{
+                        borderRadius: 8,
+                        backgroundColor: '#fff',
+                      }}
                     >
+                      {/* 顶部：状态标签 + 子任务ID + 访问按钮 */}
                       <div
                         style={{
                           display: 'flex',
                           justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          gap: 16,
+                          alignItems: 'center',
+                          marginBottom: 16,
                         }}
                       >
-                        <div style={{ flex: 1 }}>
-                          <Space align="start" style={{ marginBottom: 12 }} wrap>
-                            <Tag
-                              icon={subTaskStatusConfig.icon}
-                              color={subTaskStatusConfig.color}
-                            >
-                              {subTaskStatusConfig.text}
-                            </Tag>
-                            <Text type="secondary" code>
-                              子任务ID: {subTask.subtaskId}
-                            </Text>
-                            {subTask.url && (
-                              <Text type="secondary" ellipsis style={{ maxWidth: 400 }}>
-                                URL: {subTask.url}
-                              </Text>
-                            )}
-                          </Space>
-                          {subTask.currentPage !== undefined && subTask.totalPages !== undefined && (
-                            <div style={{ marginBottom: 8 }}>
-                              <Text type="secondary">
-                                进度: {subTask.currentPage} / {subTask.totalPages} 页
-                              </Text>
-                              <Progress
-                                percent={Math.round((subTask.currentPage / subTask.totalPages) * 100)}
-                                size="small"
-                                style={{ marginTop: 4 }}
-                              />
-                            </div>
-                          )}
-                          <Space size="large">
-                            {subTask.startedAt && (
-                              <Text type="secondary">
-                                开始时间: {new Date(subTask.startedAt).toLocaleString('zh-CN')}
-                              </Text>
-                            )}
-                            {subTask.completedAt && (
-                              <Text type="secondary">
-                                完成时间: {new Date(subTask.completedAt).toLocaleString('zh-CN')}
-                              </Text>
-                            )}
-                            <Text type="secondary">
-                              创建时间: {new Date(subTask.createdAt).toLocaleString('zh-CN')}
-                            </Text>
-                          </Space>
-                          {subTask.errorMessage && (
-                            <div style={{ marginTop: 8 }}>
-                              <Text type="danger">错误: {subTask.errorMessage}</Text>
-                            </div>
-                          )}
-                        </div>
+                        <Space>
+                          <Tag
+                            icon={subTaskStatusConfig.icon}
+                            color={subTaskStatusConfig.color}
+                            style={{
+                              borderRadius: 12,
+                              padding: '4px 12px',
+                              fontSize: 14,
+                              fontWeight: 500,
+                            }}
+                          >
+                            {subTaskStatusConfig.text}
+                          </Tag>
+                          <Text
+                            type="secondary"
+                            style={{
+                              backgroundColor: '#f5f5f5',
+                              padding: '4px 12px',
+                              borderRadius: 12,
+                              fontSize: 14,
+                            }}
+                          >
+                            #{taskNumber}
+                          </Text>
+                        </Space>
+                        {subTask.url && (
+                          <Button
+                            size="small"
+                            icon={<LinkOutlined />}
+                            onClick={() => handleVisitUrl(subTask.url!)}
+                          >
+                            访问
+                          </Button>
+                        )}
                       </div>
+
+                      {/* 目标URL部分 */}
+                      {subTask.url && (
+                        <div style={{ marginBottom: 16 }}>
+                          <Text
+                            type="secondary"
+                            style={{
+                              display: 'block',
+                              marginBottom: 8,
+                              fontSize: 14,
+                              fontWeight: 500,
+                            }}
+                          >
+                            目标URL
+                          </Text>
+                          <Input.Group compact style={{ display: 'flex' }}>
+                            <Input
+                              value={subTask.url}
+                              readOnly
+                              style={{
+                                flex: 1,
+                                backgroundColor: '#fafafa',
+                              }}
+                            />
+                            <Button
+                              icon={<CopyOutlined />}
+                              onClick={() => handleCopyUrl(subTask.url!)}
+                            >
+                              复制
+                            </Button>
+                          </Input.Group>
+                        </div>
+                      )}
+
+                      {/* 抓取进度部分 */}
+                      {subTask.currentPage !== undefined && subTask.totalPages !== undefined && (
+                        <div style={{ marginBottom: 16 }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              marginBottom: 8,
+                            }}
+                          >
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 500,
+                              }}
+                            >
+                              抓取进度
+                            </Text>
+                            <Text
+                              type="secondary"
+                              style={{
+                                fontSize: 14,
+                              }}
+                            >
+                              {subTask.currentPage} / {subTask.totalPages}
+                            </Text>
+                          </div>
+                          <Progress
+                            percent={progressPercent}
+                            status={subTask.status === 'failed' ? 'exception' : subTask.status === 'completed' ? 'success' : 'active'}
+                            strokeColor={subTask.status === 'completed' ? '#52c41a' : undefined}
+                            style={{
+                              marginTop: 4,
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* 时间信息部分（两列布局） */}
+                      <Row gutter={16}>
+                        {subTask.startedAt && (
+                          <Col span={12}>
+                            <div>
+                              <Space>
+                                <ClockCircleOutlined style={{ color: '#8c8c8c' }} />
+                                <Text type="secondary" style={{ fontSize: 14 }}>
+                                  开始时间
+                                </Text>
+                              </Space>
+                              <div style={{ marginTop: 4 }}>
+                                <Text style={{ fontSize: 14 }}>
+                                  {new Date(subTask.startedAt).toLocaleString('zh-CN', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                  })}
+                                </Text>
+                              </div>
+                            </div>
+                          </Col>
+                        )}
+                        {subTask.completedAt && (
+                          <Col span={12}>
+                            <div>
+                              <Space>
+                                <CheckCircleOutlined style={{ color: '#8c8c8c' }} />
+                                <Text type="secondary" style={{ fontSize: 14 }}>
+                                  完成时间
+                                </Text>
+                              </Space>
+                              <div style={{ marginTop: 4 }}>
+                                <Text style={{ fontSize: 14 }}>
+                                  {new Date(subTask.completedAt).toLocaleString('zh-CN', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                  })}
+                                </Text>
+                              </div>
+                            </div>
+                          </Col>
+                        )}
+                      </Row>
+
+                      {/* 错误信息 */}
+                      {subTask.errorMessage && (
+                        <div style={{ marginTop: 16, padding: 12, backgroundColor: '#fff2f0', borderRadius: 4 }}>
+                          <Text type="danger" style={{ fontSize: 14 }}>
+                            错误: {subTask.errorMessage}
+                          </Text>
+                        </div>
+                      )}
                     </Card>
                   );
                 })}

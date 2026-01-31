@@ -36,14 +36,14 @@ import type { Dayjs } from 'dayjs';
 import DashboardLayout from '@/components/DashboardLayout';
 import TaskCreationDialog from '@/components/TaskCreationDialog';
 import type { Task, TaskListResponse, ApiResponse } from '@/lib/types/task';
-import { get } from '@/lib/api';
+import { get, post } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
 type TaskStatus = 'all' | 'pending' | 'processing' | 'completed' | 'failed';
-type TaskType = 'all' | 'sync_order' | 'data_collection' | 'review_task';
+type TaskType = 'all' | 'data_collection' | 'review_task';
 
 interface QueryParams {
   taskType?: TaskType;
@@ -70,7 +70,6 @@ export default function TaskPage() {
   // 映射 taskType 到 excutor
   const mapTaskTypeToExcutor = (taskType: TaskType): string | undefined => {
     const mapping: Record<string, string> = {
-      sync_order: 'qianyi',
       data_collection: 'fastmoss',
       review_task: 'tiktok',
     };
@@ -82,7 +81,7 @@ export default function TaskPage() {
     try {
       setIsLoading(true);
       
-      const params: Record<string, any> = {
+      const body: Record<string, any> = {
         page,
         pageSize,
       };
@@ -91,34 +90,34 @@ export default function TaskPage() {
       
       // 映射查询参数到 API 参数
       if (activeFilters.taskId) {
-        params.taskDefinitionId = activeFilters.taskId;
+        body.taskDefinitionId = activeFilters.taskId;
       }
       
       if (activeFilters.taskType && activeFilters.taskType !== 'all') {
         const excutor = mapTaskTypeToExcutor(activeFilters.taskType);
         if (excutor) {
-          params.excutor = excutor;
+          body.excutor = excutor;
         }
       }
       
       if (activeFilters.status && activeFilters.status !== 'all') {
-        params.status = activeFilters.status;
+        body.status = activeFilters.status;
       }
       
       if (activeFilters.startTime) {
-        params.startTime = activeFilters.startTime;
+        body.startTime = activeFilters.startTime;
       }
       
       if (activeFilters.endTime) {
-        params.endTime = activeFilters.endTime;
+        body.endTime = activeFilters.endTime;
       }
 
       console.log('🔍 [TaskPage] 发起API请求:', {
         endpoint: '/task/definition/list',
-        params,
+        body,
       });
 
-      const apiResponse = await get<ApiResponse<TaskListResponse>>('/task/definition/list', params);
+      const apiResponse = await post<ApiResponse<TaskListResponse>>('/task/definition/list', body);
       
       console.log('✅ [TaskPage] API响应成功:', apiResponse);
       
@@ -275,7 +274,6 @@ export default function TaskPage() {
                       style={{ width: 200 }}
                       options={[
                         { value: 'all', label: '全部' },
-                        { value: 'sync_order', label: '同步订单' },
                         { value: 'data_collection', label: '数据采集' },
                         { value: 'review_task', label: '评论任务' },
                       ]}

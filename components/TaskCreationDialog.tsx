@@ -23,7 +23,7 @@ interface TaskCreationDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type TaskType = 'qianyi_sync' | 'tiktok_review' | 'fastmoss_crawl';
+type TaskType = 'tiktok_review' | 'fastmoss_crawl';
 
 export default function TaskCreationDialog({
   open,
@@ -50,25 +50,22 @@ export default function TaskCreationDialog({
   }) => {
     setIsSubmitting(true);
     try {
-      // 根据任务类型确定拆分策略
-      // 有 URLs 的任务使用 url_list，其他使用 page
-      const splitStrategy: SplitStrategy = 
-        (values.taskType === 'fastmoss_crawl' || values.taskType === 'tiktok_review') 
-          ? 'url_list' 
-          : 'page';
+      // 根据任务类型确定拆分策略和执行器
+      const splitStrategy: SplitStrategy = 'url_list'; // 所有任务都使用 url_list
+      
+      // 根据任务类型确定执行器
+      const excutor = values.taskType === 'tiktok_review' ? 'tiktok' : 'fastmoss';
 
       // 构建任务定义数据
       const taskDefinitionData: CreateTaskDefinitionDto = {
         name: values.name || `任务_${Date.now()}`,
         description: values.remark || undefined,
         splitStrategy: splitStrategy,
+        excutor: excutor,
       };
 
       // 根据任务类型设置配置
-      if (values.taskType === 'qianyi_sync') {
-        // 千易订单同步任务 - 不需要 config
-        taskDefinitionData.config = undefined;
-      } else if (values.taskType === 'fastmoss_crawl') {
+      if (values.taskType === 'fastmoss_crawl') {
         // FastMoss爬虫任务需要URL
         if (!values.urls) {
           message.error('请输入至少一个URL');
@@ -128,7 +125,6 @@ export default function TaskCreationDialog({
       }
 
       const taskTypeName = 
-        values.taskType === 'qianyi_sync' ? '千易订单同步' :
         values.taskType === 'tiktok_review' ? 'TikTok评论爬虫' :
         'FastMoss爬虫';
       
@@ -189,7 +185,6 @@ export default function TaskCreationDialog({
             placeholder="请选择要创建的任务类型"
             onChange={handleTaskTypeChange}
             options={[
-              { value: 'qianyi_sync', label: '千易订单同步任务' },
               { value: 'tiktok_review', label: 'TikTok评论爬虫任务' },
               { value: 'fastmoss_crawl', label: 'FastMoss爬虫任务' },
             ]}
@@ -211,23 +206,31 @@ export default function TaskCreationDialog({
         {taskType && (
           <Form.Item label="拆分策略">
             <Input
-              value={
-                taskType === 'fastmoss_crawl' || taskType === 'tiktok_review'
-                  ? 'url_list'
-                  : 'page'
-              }
+              value="url_list"
               disabled
               style={{ background: '#f5f5f5' }}
             />
             <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-              {taskType === 'fastmoss_crawl' || taskType === 'tiktok_review'
-                ? '按URL列表拆分任务'
-                : '按页面拆分任务'}
+              按URL列表拆分任务
             </Text>
           </Form.Item>
         )}
 
-        {taskType && taskType !== 'qianyi_sync' && (
+        {/* 执行器 - 写死展示 */}
+        {taskType && (
+          <Form.Item label="执行器">
+            <Input
+              value={taskType === 'tiktok_review' ? 'tiktok' : 'fastmoss'}
+              disabled
+              style={{ background: '#f5f5f5' }}
+            />
+            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+              {taskType === 'tiktok_review' ? 'TikTok执行器' : 'FastMoss执行器'}
+            </Text>
+          </Form.Item>
+        )}
+
+        {taskType && (
           <>
         <Form.Item
           label={
